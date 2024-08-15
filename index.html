@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancer Incidence Map of the USA</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+            margin: 20px auto;
+            border: 2px solid #ccc;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin: 20px 0;
+        }
+        .info {
+            padding: 6px 8px;
+            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        .legend {
+            line-height: 18px;
+            color: #555;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cancer Incidence Map of the USA</h1>
+    <div id="map"></div>
+    
+    <script>
+        // Cancer incidence data embedded directly in the HTML as a JavaScript object
+        const cancerData = {
+            "Alabama": 480,
+            "Alaska": 430,
+            "Arizona": 520,
+            "Arkansas": 550,
+            "California": 600,
+            "Colorado": 450,
+            "Connecticut": 490,
+            "Delaware": 510,
+            "Florida": 570,
+            "Georgia": 540,
+            "Hawaii": 430,
+            "Idaho": 470,
+            "Illinois": 590,
+            "Indiana": 560,
+            "Iowa": 540,
+            "Kansas": 500,
+            "Kentucky": 580,
+            "Louisiana": 570,
+            "Maine": 520,
+            "Maryland": 490,
+            "Massachusetts": 510,
+            "Michigan": 560,
+            "Minnesota": 480,
+            "Mississippi": 530,
+            "Missouri": 550,
+            "Montana": 460,
+            "Nebraska": 490,
+            "Nevada": 520,
+            "New Hampshire": 500,
+            "New Jersey": 570,
+            "New Mexico": 450,
+            "New York": 580,
+            "North Carolina": 540,
+            "North Dakota": 470,
+            "Ohio": 590,
+            "Oklahoma": 560,
+            "Oregon": 500,
+            "Pennsylvania": 600,
+            "Rhode Island": 490,
+            "South Carolina": 550,
+            "South Dakota": 470,
+            "Tennessee": 580,
+            "Texas": 570,
+            "Utah": 430,
+            "Vermont": 500,
+            "Virginia": 540,
+            "Washington": 490,
+            "West Virginia": 570,
+            "Wisconsin": 520,
+            "Wyoming": 460
+        };
+
+        // Initialize the map
+        var map = L.map('map').setView([37.8, -96], 4);
+
+        // Add a tile layer to the map
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Load GeoJSON data for US states
+        fetch('states.geojson')
+            .then(response => response.json())
+            .then(geoData => {
+                // Add GeoJSON layer with cancer incidence information
+                L.geoJson(geoData, {
+                    style: function (feature) {
+                        const stateName = feature.properties.name;
+                        const incidence = cancerData[stateName] || 0;
+                        return {
+                            fillColor: getColor(incidence),
+                            weight: 2,
+                            opacity: 1,
+                            color: 'white',
+                            dashArray: '3',
+                            fillOpacity: 0.7
+                        };
+                    },
+                    onEachFeature: function (feature, layer) {
+                        const stateName = feature.properties.name;
+                        const incidence = cancerData[stateName] || 'Data not available';
+                        layer.bindPopup(
+                            `<strong>${stateName}</strong><br>Incidence: ${incidence} cases per 100,000`
+                        );
+                    }
+                }).addTo(map);
+            });
+
+        // Function to determine color based on cancer incidence
+        function getColor(d) {
+            return d > 600 ? '#800026' :
+                   d > 500 ? '#BD0026' :
+                   d > 400 ? '#E31A1C' :
+                   d > 300 ? '#FC4E2A' :
+                   d > 200 ? '#FD8D3C' :
+                   d > 100 ? '#FEB24C' :
+                   d > 0   ? '#FED976' :
+                             '#FFEDA0';
+        }
+
+        // Add a legend to the map
+        var legend = L.control({ position: 'bottomright' });
+
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend'),
+                grades = [0, 100, 200, 300, 400, 500, 600],
+                labels = [];
+
+            // Loop through the intervals and generate a label with a colored square for each interval
+            for (var i = 0; i < grades.length; i++) {
+                div.innerHTML +=
+                    '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+                    grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+            }
+
+            return div;
+        };
+
+        legend.addTo(map);
+    </script>
+</body>
+</html>
